@@ -10,7 +10,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="google" content="notranslate" />
     <meta name="keywords" content="Charlotte,"> 
-    
+    <meta name="description" content="
+&amp;emsp;&amp;emsp;spring-boot-best-practice系列为笔者这几年在工作中自身遇到的问题或从各路前辈的博客中汲取的灵感，所总结出的springboot最佳实现方式(至少是个,"> 
     <meta name="author" content="Charlotte Li"> 
     <link rel="alternative" href="atom.xml" title="Charlotte&#39;s Blog" type="application/atom+xml"> 
     <link rel="icon" href="/img/favicon.png"> 
@@ -67,7 +68,12 @@
 
         </div>
         <div class="content markdown">
-            
+            <blockquote>
+<p><em>&emsp;&emsp;spring-boot-best-practice系列为笔者这几年在工作中自身遇到的问题或从各路前辈的博客中汲取的灵感，所总结出的springboot最佳实现方式(<del>至少是个人认为</del>)。笔者才疏学浅，有些地方若有疏漏之处或有更好的实现方案欢迎在评论区批评指正，还请各位看客多多海涵。</em>  </p>
+</blockquote>
+<p>&emsp;&emsp;在工作中我们会遇到许多复杂的业务逻辑，这些业务逻辑既不好抽象也没有什么通用性可言，只能硬着头皮写着可能过了一天连我们自己都不认识的代码，更别提这些代码若是被其他人接手后的上手成本有多高了。通常这些代码中会出现许多的if-else来约束这些复杂的业务逻辑，不仅是在开发阶段中，在测试阶段抑或是在后期维护阶段中，若发现该代码不能满足此时的业务逻辑之后，一般情况下我们也不会选择重构或优化之前的代码(<del>大部分程序员通病，懒或是没有时间</del>)，而是继续昧着良心 <del>?</del> 小心翼翼的在现有代码上见缝插针地找出适合加上新if-else的位置，来满足用户或产品的需求。那么这样就会产生恶性循环，使得代码变得越来越难以理解以及重构的希望越来越渺茫。那么为了避免这种地狱嵌套if-else的出现频率，我们就需要掌握一种设计模式——策略模式。  </p>
+<p>施工中。。。</p>
+
             <!--[if lt IE 9]><script>document.createElement('audio');</script><![endif]-->
             <audio id="audio" loop="1" preload="auto" controls="controls" data-autoplay="false">
                 <source type="audio/mpeg" src="">
