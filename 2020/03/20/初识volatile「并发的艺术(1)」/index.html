@@ -1,0 +1,261 @@
+
+<!DOCTYPE html>
+<html lang="en" class="loading">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>初识volatile「并发的艺术(1)」 - Charlotte&#39;s Blog</title>
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="google" content="notranslate" />
+    <meta name="keywords" content="Charlotte,"> 
+    <meta name="description" content="
+artist of concurrent 系列为笔者在学习多线程及并发时整理的学习笔记，贡大家共同学习参考，若有疏漏之处，欢迎及时联系笔者修改。
+
+1. volatile理解
+1.1 volati,"> 
+    <meta name="author" content="Charlotte Li"> 
+    <link rel="alternative" href="atom.xml" title="Charlotte&#39;s Blog" type="application/atom+xml"> 
+    <link rel="icon" href="/img/favicon.png"> 
+    
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+    
+<link rel="stylesheet" href="/css/diaspora.css">
+
+    <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+    <script>
+         (adsbygoogle = window.adsbygoogle || []).push({
+              google_ad_client: "ca-pub-8691406134231910",
+              enable_page_level_ads: true
+         });
+    </script>
+    <script async custom-element="amp-auto-ads"
+        src="https://cdn.ampproject.org/v0/amp-auto-ads-0.1.js">
+    </script>
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body class="loading">
+    <span id="config-title" style="display:none">Charlotte&#39;s Blog</span>
+    <div id="loader"></div>
+    <div id="single">
+    <div id="top" style="display: block;">
+    <div class="bar" style="width: 0;"></div>
+    <a class="icon-home image-icon" href="javascript:;" data-url="http://artech.plus"></a>
+    <div title="播放/暂停" class="icon-play"></div>
+    <h3 class="subtitle">初识volatile「并发的艺术(1)」</h3>
+    <div class="social">
+        <!--<div class="like-icon">-->
+            <!--<a href="javascript:;" class="likeThis active"><span class="icon-like"></span><span class="count">76</span></a>-->
+        <!--</div>-->
+        <div>
+            <div class="share">
+                <a title="获取二维码" class="icon-scan" href="javascript:;"></a>
+            </div>
+            <div id="qr"></div>
+        </div>
+    </div>
+    <div class="scrollbar"></div>
+</div>
+
+    <div class="section">
+        <div class="article">
+    <div class='main'>
+        <h1 class="title">初识volatile「并发的艺术(1)」</h1>
+        <div class="stuff">
+            <span>三月 20, 2020</span>
+            
+  <ul class="post-tags-list" itemprop="keywords"><li class="post-tags-list-item"><a class="post-tags-list-link" href="/tags/artist-of-concurrent/" rel="tag">artist of concurrent</a></li></ul>
+
+
+        </div>
+        <div class="content markdown">
+            <blockquote>
+<p><em>artist of concurrent 系列为笔者在学习多线程及并发时整理的学习笔记，贡大家共同学习参考，若有疏漏之处，欢迎及时联系笔者修改。</em></p>
+</blockquote>
+<h3 id="1-volatile理解"><a href="#1-volatile理解" class="headerlink" title="1. volatile理解"></a>1. volatile理解</h3><hr>
+<h4 id="1-1-volatile是Java虚拟机提供的轻量级的同步机制"><a href="#1-1-volatile是Java虚拟机提供的轻量级的同步机制" class="headerlink" title="1.1 volatile是Java虚拟机提供的轻量级的同步机制"></a>1.1 volatile是Java虚拟机提供的轻量级的同步机制</h4><p>之所以是轻量级是因为volatile不保证原子性(<del>乞丐版的synchronized</del>)，其余基本遵循了JMM规范<br>以下是volatile的特性：</p>
+<blockquote>
+<p><strong>1. 保证可见性</strong></p>
+</blockquote>
+<pre><code>各个线程对主内存中共享变量的操作都是各个线程各自拷贝到自己的工作内存中操作后再写回到主内存中的。这就可能存在一个线程A修改了共享变量X的值但还未写回主内存时，另外一个线程B又对主内存中同一个共享变量X进行操作，但此时A线程工作内存中共享变量X对线程B来说不可见。这种工作内存与主内存同步延迟现象就造成了可见性问题。</code></pre><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Author</span>: Charlotte Li</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>: 验证volatile可见性</span></span><br><span class="line"><span class="comment"> * 1.1 假如初始化时 int num = 0; 并且num之前没有加volatile关键字修饰</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Date</span>: 2020/3/4 22:54</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Param</span></span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> **/</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestClass</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        MyData myData = <span class="keyword">new</span> MyData();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">            System.out.println(Thread.currentThread().getName() + <span class="string">"\t started."</span>);</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                TimeUnit.SECONDS.sleep(<span class="number">3</span>);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                e.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">            myData.addTo60();</span><br><span class="line">            System.out.println(Thread.currentThread().getName() + <span class="string">"\t updated value completed,num's value is "</span> + myData.num);</span><br><span class="line">        &#125;, <span class="string">"NewThread1"</span>).start();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">while</span> (myData.num == <span class="number">0</span>) &#123;</span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(Thread.currentThread().getName() + <span class="string">"\t mission completed"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyData</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> num = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">addTo60</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        num = <span class="number">60</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<pre><code>上述代码会在while中死循环不会结束，因为main线程的工作内存中mydata.num始终是0，NewThread1线程中对mydata.num的修改并不会被通知到main线程，但当num加上volatile关键字修饰后(volatile int num = 0)，该成员变量具有了可见性，三秒后代码则会正常退出。</code></pre><blockquote>
+<p><strong>2. 不保证原子性</strong></p>
+</blockquote>
+<pre><code>原子性指的是不可分割，完整性，即某个线程正在做某个具体业务时，中间不可以被加塞或者被分割，需要整体完整，要么同时成功，要么同时失败。</code></pre><blockquote>
+<p>那如何解决原子性呢？</p>
+</blockquote>
+<ol>
+<li>加synchronized，但是过于杀鸡焉用宰牛刀</li>
+<li>使用AtomicInteger，常用方法如下<blockquote>
+<p>AtomicInteger.getAndIncrement() ==&gt; i++<br>AtomicInteger.incrementAndGet() ==&gt; ++i<br>AtomicInteger.getAndAdd(int delta)<br>AtomicInteger.addAndGet(int delta)<br>AtomicInteger.getAndDecrement() ==&gt; i–<br>AtomicInteger.decrementAndget() ==&gt; –i</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyAtomicData</span> </span>&#123;</span><br><span class="line">    AtomicInteger num = <span class="keyword">new</span> AtomicInteger();</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">getAndIncrement</span><span class="params">()</span></span>&#123;</span><br><span class="line">        num.getAndIncrement();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>那为什么JUC下的AtomicXXX能解决原子性呢？</p>
+</blockquote>
+</li>
+</ol>
+<blockquote>
+<p><strong>3. 禁止指令重排</strong><br>何为指令重排请见JMM有序性</p>
+</blockquote>
+<pre><code>volatile实现禁止指令重排优化，从而避免多线程环境下程序出现乱序执行的现象
+先了解一个概念，内存屏障(Memory Barrier)又称内存栅栏，是一个CPU指令，它的作用有两个：
+1. 保证特定操作的执行顺序
+2. 保证某些变量的内存可见性(利用该特性实现volatile的内存可见性)
+由于编译器和处理器都能执行指令重排优化，如果在指令间插入一条Memory Barrier则会告诉编译器和CPU，不管什么指令都不能和这条Memory Barrier指令重排序，也就是说通过插入内存屏障禁止在内存屏障前后的指令执行重排序优化。内存屏障的另外一个作用是强制刷出各种CPU的缓存数据，因此任何CPU上的线程都能读取到这些数据的最新版本。
+![105db655a35cff828e138d0d1fb136c5.png](evernotecid://3E87618A-7C55-4744-BDF0-76F5B671477C/appyinxiangcom/28375755/ENResource/p17)</code></pre><h4 id="1-2-JMM-Java内存模型-Java-Memory-Model"><a href="#1-2-JMM-Java内存模型-Java-Memory-Model" class="headerlink" title="1.2 JMM(Java内存模型-Java Memory Model)"></a>1.2 JMM(Java内存模型-Java Memory Model)</h4><blockquote>
+<p><strong>JMM是一种抽象的概念，并不真实存在，描述的是一组规则活规范，通过这组规范定义了程序中各个变量的访问方式。是多线程需要遵循的规范</strong></p>
+</blockquote>
+<blockquote>
+<p>JMM关于同步的规定：</p>
+</blockquote>
+<ol>
+<li><p>线程解锁前，必须把共享变量的值刷新回主内存</p>
+</li>
+<li><p>线程加锁前，必须读取主内存的最新值到自己的工作内存</p>
+</li>
+<li><p>加锁解锁是同一把锁</p>
+<p> 主内存是线程间共享的，创建线程时JVM都会为其创建一个工作内存，每个线程独立，不能互相访问。线程对变量的操作必须在工作内存中进行，首先要将变量从主内存拷贝自己的工作内存空间，然后对变量进行操作，操作完成后再将变量写回主内存。</p>
+</li>
+</ol>
+<p>JMM特性</p>
+<ol>
+<li><p><strong>可见性</strong></p>
+</li>
+<li><p><strong>原子性</strong></p>
+</li>
+<li><p><strong>有序性</strong></p>
+<blockquote>
+<p><strong>何为有序性？</strong></p>
+</blockquote>
+<p>  计算机在执行程序时，为了提高性能，编译器和处理器常常会对指令做重排，一般分为以下三种<br>  源代码==》<u>编译器优化的重排</u>==》<u>指令并行的重排</u>==》<u>内存系统的重排</u>==》最终执行的指令</p>
+<ol>
+<li>单线程环境里面确保程序最终执行结果和代码顺序执行的结果一致。</li>
+<li>处理器在进行重排序时必须要考虑指令之间的数据依赖性。</li>
+<li>多线程环境中线程交替执行，由于编译器优化重排的存在，两个线程中使用的变量能否保证一致性是无法确定的，结果无法预测。</li>
+</ol>
+</li>
+</ol>
+<h4 id="1-3-你在哪些地方用到过volatile"><a href="#1-3-你在哪些地方用到过volatile" class="headerlink" title="1.3 你在哪些地方用到过volatile?"></a>1.3 你在哪些地方用到过volatile?</h4><ol>
+<li><strong>DCL(double checked lock)单例模式</strong></li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Author</span>: Charlotte Li</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Date</span>: 2020/3/5 22:58</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>: 线程安全的懒汉单例设计模式--DCL单例模式</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@version</span>: 1.0</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SingletonLazySync</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">volatile</span> SingletonLazySync instance = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">SingletonLazySync</span><span class="params">()</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> SingletonLazySync <span class="title">getInstance</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (instance == <span class="keyword">null</span>)&#123;</span><br><span class="line">            <span class="keyword">synchronized</span> (SingletonLazySync<span class="class">.<span class="keyword">class</span>)</span>&#123;</span><br><span class="line">                <span class="keyword">if</span> (instance == <span class="keyword">null</span>)</span><br><span class="line">                    instance = <span class="keyword">new</span> SingletonLazySync();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<pre><code>上述代码中，在不加volatile的情况下，DCL机制不一定线程安全，原因是有指令重排序的情况存在。
+原因在于某一个线程执行到第一次检测，读取到的instance不为null时，instance的引用对象可能没有完成初始化。
+instance = new SingletonLazySync();可以分为以下三个步骤(伪代码)：
+1. memory = allocate(); //分配对象内存空间
+2. instance(momery);    //初始化对象
+3. instance = memory;   //设置instance指向刚分配的内存地址，此时instance!=null
+由于步骤2和步骤3不存在数据依赖关系，所以编译器可能对其进行重排序优化
+指令重排只会保证串行语义执行的一致性(单线程)，但并不会关心多线程间的语义一致性，所以当一个线程访问instance不为null时，由于instance实例未必已完成初始化，所以获取的instance地址虽然不为空，但是instance中的内容可能为空，也就造成了线程安全问题。</code></pre>
+            <!--[if lt IE 9]><script>document.createElement('audio');</script><![endif]-->
+            <audio id="audio" loop="1" preload="auto" controls="controls" data-autoplay="false">
+                <source type="audio/mpeg" src="">
+            </audio>
+            
+                <ul id="audio-list" style="display:none">
+                    
+                        
+                            <li title='0' data-url='http://link.hhtjim.com/163/5146554.mp3'></li>
+                        
+                    
+                        
+                            <li title='1' data-url='http://link.hhtjim.com/qq/001faIUs4M2zna.mp3'></li>
+                        
+                    
+                </ul>
+            
+        </div>
+        
+    <div id='gitalk-container' class="comment link"
+        data-ae='false'
+        data-ci=''
+        data-cs=''
+        data-r=''
+        data-o=''
+        data-a=''
+        data-d='false'
+    >查看评论</div>
+
+
+    </div>
+    
+</div>
+
+
+    </div>
+</div>
+</body>
+
+<script src="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
+
+
+<script src="//lib.baomitu.com/jquery/1.8.3/jquery.min.js"></script>
+<script src="/js/plugin.js"></script>
+<script src="/js/diaspora.js"></script>
+
+
+<link rel="stylesheet" href="/photoswipe/photoswipe.css">
+<link rel="stylesheet" href="/photoswipe/default-skin/default-skin.css">
+
+
+<script src="/photoswipe/photoswipe.min.js"></script>
+<script src="/photoswipe/photoswipe-ui-default.min.js"></script>
+
+
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+            <div class="pswp__top-bar">
+                <!--  Controls are self-explanatory. Order can be changed. -->
+                <div class="pswp__counter"></div>
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                      <div class="pswp__preloader__cut">
+                        <div class="pswp__preloader__donut"></div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div> 
+            </div>
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+</html>
